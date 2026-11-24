@@ -137,6 +137,11 @@ async function persistTheme(theme) {
 }
 
 loadSavedTheme();
+requestAnimationFrame(() => {
+  requestAnimationFrame(() => {
+    document.body.classList.add("transitions-ready");
+  });
+});
 
 function sendMessage(message) {
   return new Promise((resolve, reject) => {

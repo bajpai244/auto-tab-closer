@@ -81,6 +81,9 @@ body {
   color: var(--ink);
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
+}
+
+body.transitions-ready {
   transition: background-color 0.22s ease, color 0.22s ease;
 }
 
@@ -366,7 +369,10 @@ body {
 }
 
 .hero-input-wrap input {
-  width: 92px;
+  width: 74px;
+  field-sizing: content;
+  min-width: 1.5ch;
+  max-width: 5.5ch;
   border: none;
   background: transparent;
   color: var(--ink);
@@ -374,7 +380,7 @@ body {
   font-weight: 300;
   letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums;
-  text-align: right;
+  text-align: center;
   padding: 0;
   outline: none;
   -moz-appearance: textfield;

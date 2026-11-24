@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="icons/icon.svg" width="72" height="72" alt="Auto Tab Closer icon">
+  <img src="icons/icon.svg" width="76" height="76" alt="Auto Tab Closer icon">
 </p>
 
 <h1 align="center">Auto Tab Closer</h1>
@@ -7,6 +7,33 @@
 <p align="center">
   A quiet, Zen-minimalist Chrome extension (Manifest V3) that automatically closes inactive browser tabs and Chrome web apps (PWAs) once they pass a configurable stillness timer.
 </p>
+
+---
+
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/timer-light.png" width="320" alt="Timer — Washi Light theme"><br>
+      <sub><b>Timer (Washi Light)</b> — Default 120-minute stillness timer &amp; protection rules</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/timer-dark.png" width="320" alt="Timer — Sumi Dark theme"><br>
+      <sub><b>Timer (Sumi Dark)</b> — 1-click light/dark theme toggle from the header</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/open-tabs-dark.png" width="320" alt="Open Tabs live countdowns"><br>
+      <sub><b>Open Tabs</b> — Live countdowns, per-tab timer reset &amp; protection badges</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/closed-light.png" width="320" alt="Recently Closed recovery list"><br>
+      <sub><b>Recently Closed</b> — 1-click reopen safety net for auto-closed tabs</sub>
+    </td>
+  </tr>
+</table>
 
 ---
 
@@ -65,7 +92,8 @@ Chrome Manifest V3 service workers are ephemeral, so Auto Tab Closer persists al
 ```text
 auto-tab-closer/
 ├── manifest.json           # Chrome Extension Manifest V3 definition
-├── icons/                  # Zen SVG source and 16/32/48/128 PNG toolbar icons
+├── icons/                  # Zen Ensō SVG source and 16/32/48/128/512 PNG icons
+├── docs/screenshots/       # Product UI screenshots (light & dark themes)
 ├── src/
 │   ├── core.js             # Pure timer evaluation, protection rules, domain matching
 │   ├── background.js       # MV3 service worker, event tracking, alarm sweeps
