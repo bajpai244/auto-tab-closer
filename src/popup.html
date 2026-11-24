@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auto Tab Closer</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <div class="brand">
+        <img src="../icons/icon32.png" alt="" class="brand-icon" width="28" height="28">
+        <div class="brand-text">
+          <h1>Auto Tab Closer</h1>
+          <p id="statusSubtitle" class="subtitle">Loading...</p>
+        </div>
+      </div>
+      <label class="switch" title="Enable or pause auto-closing">
+        <input type="checkbox" id="enabledToggle" aria-label="Enable Auto Tab Closer">
+        <span class="slider"></span>
+      </label>
+    </header>
+
+    <nav class="tabs-nav" role="tablist">
+      <button type="button" class="tab-btn active" data-tab="timer" role="tab" aria-selected="true">
+        Timer
+      </button>
+      <button type="button" class="tab-btn" data-tab="open" role="tab" aria-selected="false">
+        Open Tabs <span id="openCountBadge" class="pill-count">0</span>
+      </button>
+      <button type="button" class="tab-btn" data-tab="closed" role="tab" aria-selected="false">
+        Closed <span id="closedCountBadge" class="pill-count">0</span>
+      </button>
+    </nav>
+
+    <main class="content">
+      <!-- Timer & Settings Panel -->
+      <section id="panel-timer" class="panel active" role="tabpanel">
+        <div class="card">
+          <div class="card-header">
+            <label for="timeoutInput" class="card-title">Inactivity timer</label>
+            <span id="timeoutFormatted" class="accent-label">2h</span>
+          </div>
+          <p class="hint">
+            Tabs and Chrome web apps inactive longer than this duration are closed automatically.
+          </p>
+          <form id="timeoutForm" class="timer-input-row">
+            <div class="input-with-unit">
+              <input
+                type="number"
+                id="timeoutInput"
+                min="1"
+                max="43200"
+                step="1"
+                value="120"
+                required
+                aria-label="Inactivity duration in minutes"
+              >
+              <span class="unit">minutes</span>
+            </div>
+            <button type="submit" id="saveTimeoutBtn" class="btn btn-primary">Save</button>
+          </form>
+          <div id="timeoutError" class="error-text" hidden></div>
+          <div class="presets" aria-label="Quick presets">
+            <button type="button" class="preset-chip" data-minutes="15">15m</button>
+            <button type="button" class="preset-chip" data-minutes="30">30m</button>
+            <button type="button" class="preset-chip" data-minutes="60">1h</button>
+            <button type="button" class="preset-chip" data-minutes="120">2h</button>
+            <button type="button" class="preset-chip" data-minutes="240">4h</button>
+            <button type="button" class="preset-chip" data-minutes="480">8h</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Protection rules</div>
+          <div class="toggle-list">
+            <label class="toggle-row">
+              <div class="toggle-copy">
+                <span class="toggle-label">Protect pinned tabs</span>
+              </div>
+              <input type="checkbox" id="protectPinnedToggle" class="checkbox">
+            </label>
+            <label class="toggle-row">
+              <div class="toggle-copy">
+                <span class="toggle-label">Protect tabs playing audio</span>
+              </div>
+              <input type="checkbox" id="protectAudibleToggle" class="checkbox">
+            </label>
+            <label class="toggle-row">
+              <div class="toggle-copy">
+                <span class="toggle-label">Keep active tab in unfocused windows</span>
+                <span class="toggle-sub">Leave off to also auto-close idle Chrome app/PWA windows</span>
+              </div>
+              <input type="checkbox" id="protectBgActiveToggle" class="checkbox">
+            </label>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Excluded domains</span>
+            <button type="button" id="excludeCurrentBtn" class="btn-link" hidden>
+              + Current site
+            </button>
+          </div>
+          <form id="excludeForm" class="exclude-input-row">
+            <input
+              type="text"
+              id="excludeInput"
+              placeholder="e.g. mail.google.com"
+              autocomplete="off"
+              aria-label="Domain to exclude"
+            >
+            <button type="submit" class="btn btn-secondary">Add</button>
+          </form>
+          <div id="excludeError" class="error-text" hidden></div>
+          <ul id="excludedList" class="chip-list"></ul>
+          <p id="excludedEmpty" class="empty-inline">No excluded domains yet.</p>
+        </div>
+
+        <div class="footer-bar">
+          <span id="totalClosedStat" class="stat-text">0 tabs auto-closed</span>
+          <button type="button" id="sweepNowBtn" class="btn btn-secondary btn-sm">
+            Check &amp; close now
+          </button>
+        </div>
+      </section>
+
+      <!-- Open Tabs Panel -->
+      <section id="panel-open" class="panel" role="tabpanel" hidden>
+        <div id="openTabsList" class="item-list"></div>
+        <div id="openTabsEmpty" class="empty-state" hidden>No open tabs found.</div>
+      </section>
+
+      <!-- Recently Closed Panel -->
+      <section id="panel-closed" class="panel" role="tabpanel" hidden>
+        <div class="panel-toolbar" id="closedToolbar" hidden>
+          <span class="toolbar-label">Recently auto-closed</span>
+          <button type="button" id="clearHistoryBtn" class="btn-link danger">Clear all</button>
+        </div>
+        <div id="closedHistoryList" class="item-list"></div>
+        <div id="closedHistoryEmpty" class="empty-state">
+          No tabs have been auto-closed yet.
+        </div>
+      </section>
+    </main>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  </div>
+
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

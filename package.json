@@ -1,0 +1,10 @@
+{
+  "name": "auto-tab-closer",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Chrome extension that automatically closes inactive tabs and web apps after a configurable timer (default 120 minutes).",
+  "scripts": {
+    "test": "node --test tests/*.test.js"
+  }
+}
