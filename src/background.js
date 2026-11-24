@@ -61,6 +61,24 @@ export function createController(chromeApi, now = () => Date.now()) {
     };
   }
 
+  async function refreshActionIcon() {
+    if (!chromeApi.action?.setIcon) {
+      return;
+    }
+    try {
+      await chromeApi.action.setIcon({
+        path: {
+          16: "/icons/icon16.png",
+          32: "/icons/icon32.png",
+          48: "/icons/icon48.png",
+          128: "/icons/icon128.png",
+        },
+      });
+    } catch {
+      // Ignore icon refresh errors in headless/test environments
+    }
+  }
+
   async function updateBadge(settings) {
     if (!chromeApi.action?.setBadgeText) {
       return;
@@ -520,6 +538,7 @@ export function createController(chromeApi, now = () => Date.now()) {
 
     // Ensure alarm and badge are always initialized when service worker wakes up
     ensureAlarm();
+    refreshActionIcon();
     updateBadge();
   }
 
