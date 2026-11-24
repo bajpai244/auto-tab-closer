@@ -107,9 +107,24 @@ body {
   min-width: 0;
 }
 
+.brand-logo {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  flex-shrink: 0;
+  display: block;
+}
+
+.subtitle-row {
+  margin: 1px 0 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .status-dot {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: var(--sage);
   flex-shrink: 0;
@@ -130,7 +145,6 @@ body {
 }
 
 .subtitle {
-  margin: 1px 0 0;
   font-size: 11.5px;
   color: var(--ink-muted);
   font-weight: 400;
