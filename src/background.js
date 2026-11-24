@@ -69,7 +69,7 @@ export function createController(chromeApi, now = () => Date.now()) {
     if (!resolved.enabled) {
       await chromeApi.action.setBadgeText({ text: 'OFF' });
       if (chromeApi.action.setBadgeBackgroundColor) {
-        await chromeApi.action.setBadgeBackgroundColor({ color: '#64748b' });
+        await chromeApi.action.setBadgeBackgroundColor({ color: '#57534e' });
       }
     } else {
       await chromeApi.action.setBadgeText({ text: '' });

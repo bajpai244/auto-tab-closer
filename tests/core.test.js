@@ -23,6 +23,7 @@ test('DEFAULT_SETTINGS defaults to 120 minutes and enabled', () => {
   assert.equal(DEFAULT_SETTINGS.protectAudible, true);
   assert.equal(DEFAULT_SETTINGS.protectBackgroundActive, false);
   assert.deepEqual(DEFAULT_SETTINGS.excludedDomains, []);
+  assert.equal(DEFAULT_SETTINGS.theme, "system");
 });
 
 test('parseTimeoutMinutes validates and clamps values', () => {
@@ -56,6 +57,10 @@ test('normalizeSettings merges defaults and deduplicates excluded domains', () =
   assert.equal(normalized.protectPinned, false);
   assert.equal(normalized.protectAudible, true);
   assert.deepEqual(normalized.excludedDomains, ['mail.google.com']);
+  assert.equal(normalized.theme, "system");
+  assert.equal(normalizeSettings({ theme: "dark" }).theme, "dark");
+  assert.equal(normalizeSettings({ theme: "light" }).theme, "light");
+  assert.equal(normalizeSettings({ theme: "sepia" }).theme, "system");
 });
 
 test('isDomainExcluded matches exact domains and subdomains without false positives', () => {

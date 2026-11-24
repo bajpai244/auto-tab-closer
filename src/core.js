@@ -5,6 +5,8 @@ export const MAX_CLOSED_HISTORY = 30;
 export const SWEEP_ALARM_NAME = 'auto-tab-closer-sweep';
 export const SWEEP_INTERVAL_MINUTES = 1;
 
+export const VALID_THEMES = Object.freeze(["system", "light", "dark"]);
+
 export const DEFAULT_SETTINGS = Object.freeze({
   enabled: true,
   timeoutMinutes: DEFAULT_TIMEOUT_MINUTES,
@@ -12,6 +14,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
   protectAudible: true,
   protectBackgroundActive: false,
   excludedDomains: [],
+  theme: "system",
 });
 
 /**
@@ -104,6 +107,9 @@ export function normalizeSettings(raw) {
         ? source.protectBackgroundActive
         : DEFAULT_SETTINGS.protectBackgroundActive,
     excludedDomains: uniqueDomains,
+    theme: VALID_THEMES.includes(source.theme)
+      ? source.theme
+      : DEFAULT_SETTINGS.theme,
   };
 }
 

@@ -7,6 +7,9 @@ import {
   parseTimeoutMinutes,
 } from './core.js';
 
+const THEME_CACHE_KEY = 'atc-theme';
+const THEME_STORAGE_KEY = 'uiTheme';
+
 const PROTECTION_LABELS = {
   active: 'Active',
   pinned: 'Pinned',
@@ -19,7 +22,9 @@ let appState = null;
 let toastTimer = null;
 
 const els = {
+  statusDot: document.getElementById('statusDot'),
   statusSubtitle: document.getElementById('statusSubtitle'),
+  themeToggleBtn: document.getElementById('themeToggleBtn'),
   enabledToggle: document.getElementById('enabledToggle'),
   tabButtons: Array.from(document.querySelectorAll('.tab-btn')),
   panels: {
@@ -31,12 +36,15 @@ const els = {
   closedCountBadge: document.getElementById('closedCountBadge'),
   timeoutForm: document.getElementById('timeoutForm'),
   timeoutInput: document.getElementById('timeoutInput'),
+  saveTimeoutBtn: document.getElementById('saveTimeoutBtn'),
   timeoutFormatted: document.getElementById('timeoutFormatted'),
   timeoutError: document.getElementById('timeoutError'),
   presetChips: Array.from(document.querySelectorAll('.preset-chip')),
   protectPinnedToggle: document.getElementById('protectPinnedToggle'),
   protectAudibleToggle: document.getElementById('protectAudibleToggle'),
   protectBgActiveToggle: document.getElementById('protectBgActiveToggle'),
+  excludeDetails: document.getElementById('excludeDetails'),
+  excludedCount: document.getElementById('excludedCount'),
   excludeCurrentBtn: document.getElementById('excludeCurrentBtn'),
   excludeForm: document.getElementById('excludeForm'),
   excludeInput: document.getElementById('excludeInput'),
@@ -53,6 +61,82 @@ const els = {
   closedHistoryEmpty: document.getElementById('closedHistoryEmpty'),
   toast: document.getElementById('toast'),
 };
+
+function isCurrentlyDark() {
+  const explicit = document.documentElement.dataset.theme;
+  if (explicit === 'dark') {
+    return true;
+  }
+  if (explicit === 'light') {
+    return false;
+  }
+  return window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+
+function applyTheme(theme) {
+  if (theme === 'light' || theme === 'dark') {
+    document.documentElement.dataset.theme = theme;
+  } else {
+    delete document.documentElement.dataset.theme;
+  }
+  try {
+    if (theme === 'light' || theme === 'dark') {
+      localStorage.setItem(THEME_CACHE_KEY, theme);
+    } else {
+      localStorage.removeItem(THEME_CACHE_KEY);
+    }
+  } catch {
+    // Ignore storage access errors
+  }
+
+  const dark = isCurrentlyDark();
+  els.themeToggleBtn.title = dark
+    ? 'Switch to light theme'
+    : 'Switch to dark theme';
+  els.themeToggleBtn.setAttribute('aria-label', els.themeToggleBtn.title);
+}
+
+async function loadSavedTheme() {
+  // 1. Apply synchronous localStorage cache first for zero flash
+  let localTheme = null;
+  try {
+    const cached = localStorage.getItem(THEME_CACHE_KEY);
+    if (cached === 'light' || cached === 'dark') {
+      localTheme = cached;
+    }
+  } catch {
+    // Ignore storage access errors
+  }
+  applyTheme(localTheme || 'system');
+
+  // 2. Reconcile with chrome.storage.local (works even if background SW was not reloaded)
+  try {
+    if (chrome?.storage?.local) {
+      const stored = await chrome.storage.local.get(THEME_STORAGE_KEY);
+      const saved = stored?.[THEME_STORAGE_KEY];
+      if (saved === 'light' || saved === 'dark') {
+        applyTheme(saved);
+      }
+    }
+  } catch {
+    // Ignore storage read errors
+  }
+}
+
+async function persistTheme(theme) {
+  applyTheme(theme);
+  try {
+    if (chrome?.storage?.local) {
+      await chrome.storage.local.set({ [THEME_STORAGE_KEY]: theme });
+    }
+  } catch {
+    // Ignore storage write errors
+  }
+  // Also sync to extension settings without letting stale responses revert the UI
+  sendMessage({ type: 'UPDATE_SETTINGS', payload: { theme } }).catch(() => {});
+}
+
+loadSavedTheme();
 
 function sendMessage(message) {
   return new Promise((resolve, reject) => {
@@ -76,7 +160,7 @@ function showToast(text) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => {
     els.toast.hidden = true;
-  }, 2200);
+  }, 2000);
 }
 
 function setActiveTab(tabName) {
@@ -95,19 +179,24 @@ function setActiveTab(tabName) {
 function updateTimeoutPreview(minutesValue) {
   const parsed = parseTimeoutMinutes(minutesValue);
   if (parsed === null) {
-    els.timeoutFormatted.textContent = 'Invalid';
-    return;
+    els.timeoutFormatted.textContent = `Enter ${MIN_TIMEOUT_MINUTES}–${MAX_TIMEOUT_MINUTES} minutes`;
+  } else {
+    els.timeoutFormatted.textContent = `Closes inactive tabs after ${formatDuration(parsed * 60 * 1000)}`;
   }
-  els.timeoutFormatted.textContent = formatDuration(parsed * 60 * 1000);
+
+  const saved = appState?.settings?.timeoutMinutes;
+  const isDirty = saved !== undefined && parsed !== saved;
+  els.saveTimeoutBtn.hidden = !isDirty;
 }
 
 function renderHeader(settings) {
   els.enabledToggle.checked = settings.enabled;
+  els.statusDot.classList.toggle('paused', !settings.enabled);
   if (settings.enabled) {
     const formatted = formatDuration(settings.timeoutMinutes * 60 * 1000);
-    els.statusSubtitle.textContent = `Closing inactive tabs after ${formatted}`;
+    els.statusSubtitle.textContent = `Active · ${formatted} stillness`;
   } else {
-    els.statusSubtitle.textContent = 'Paused — tabs will not auto-close';
+    els.statusSubtitle.textContent = 'Paused';
   }
 }
 
@@ -129,7 +218,9 @@ function renderTimerPanel(state) {
   els.protectAudibleToggle.checked = settings.protectAudible;
   els.protectBgActiveToggle.checked = settings.protectBackgroundActive;
 
-  // Current site quick-exclude button
+  // Excluded domains count & current site quick-exclude
+  els.excludedCount.textContent = String(settings.excludedDomains.length);
+
   const currentHost = extractHostname(currentTab?.url || '');
   const alreadyExcluded =
     currentHost && settings.excludedDomains.includes(currentHost);
@@ -164,8 +255,7 @@ function renderTimerPanel(state) {
     els.excludedList.append(li);
   }
 
-  const label = totalClosedCount === 1 ? 'tab' : 'tabs';
-  els.totalClosedStat.textContent = `${totalClosedCount} ${label} auto-closed`;
+  els.totalClosedStat.textContent = `${totalClosedCount} closed`;
 }
 
 function renderOpenTabs(state) {
@@ -196,35 +286,35 @@ function renderOpenTabs(state) {
     const actions = document.createElement('div');
     actions.className = 'tab-actions';
 
-    const badge = document.createElement('span');
-    badge.className = 'badge';
+    const status = document.createElement('span');
+    status.className = 'status-label';
 
     if (tab.protectionReason) {
-      badge.classList.add('badge-protected');
-      badge.textContent =
+      status.classList.add('status-protected');
+      status.textContent =
         PROTECTION_LABELS[tab.protectionReason] || 'Protected';
-      actions.append(badge);
+      actions.append(status);
     } else {
       if (!settings.enabled) {
-        badge.classList.add('badge-countdown');
-        badge.textContent = `Idle ${formatDuration(tab.inactiveMs)}`;
+        status.classList.add('status-countdown');
+        status.textContent = `Idle ${formatDuration(tab.inactiveMs)}`;
       } else if (tab.remainingMs <= 0) {
-        badge.classList.add('badge-soon');
-        badge.textContent = 'Closing soon';
+        status.classList.add('status-soon');
+        status.textContent = 'Soon';
       } else {
         const isSoon = tab.remainingMs <= 10 * 60 * 1000;
-        badge.classList.add(isSoon ? 'badge-soon' : 'badge-countdown');
-        badge.textContent = `In ${formatDuration(tab.remainingMs)}`;
+        status.classList.add(isSoon ? 'status-soon' : 'status-countdown');
+        status.textContent = `${formatDuration(tab.remainingMs)} left`;
       }
 
       const resetBtn = document.createElement('button');
       resetBtn.type = 'button';
-      resetBtn.className = 'btn btn-secondary btn-sm';
+      resetBtn.className = 'row-action';
       resetBtn.textContent = 'Reset';
       resetBtn.title = 'Reset inactivity timer for this tab';
       resetBtn.addEventListener('click', () => handleResetTabTimer(tab.id));
 
-      actions.append(badge, resetBtn);
+      actions.append(status, resetBtn);
     }
 
     row.append(main, actions);
@@ -255,13 +345,13 @@ function renderClosedHistory(state) {
     meta.className = 'tab-meta';
     const host = extractHostname(entry.url) || entry.url;
     const agoMs = Math.max(0, (now || Date.now()) - (entry.closedAt || 0));
-    meta.textContent = `${host} · closed ${formatDuration(agoMs)} ago`;
+    meta.textContent = `${host} · ${formatDuration(agoMs)} ago`;
 
     main.append(title, meta);
 
     const reopenBtn = document.createElement('button');
     reopenBtn.type = 'button';
-    reopenBtn.className = 'btn btn-secondary btn-sm';
+    reopenBtn.className = 'row-action';
     reopenBtn.textContent = 'Reopen';
     reopenBtn.addEventListener('click', () => handleReopenClosed(index));
 
@@ -272,6 +362,12 @@ function renderClosedHistory(state) {
 
 function renderAll(state) {
   appState = state;
+  if (
+    !document.documentElement.dataset.theme &&
+    (state.settings.theme === 'light' || state.settings.theme === 'dark')
+  ) {
+    applyTheme(state.settings.theme);
+  }
   renderHeader(state.settings);
   renderTimerPanel(state);
   renderOpenTabs(state);
@@ -311,7 +407,7 @@ async function addExcludedDomain(rawInput) {
   const existing = appState?.settings?.excludedDomains || [];
   if (existing.includes(domain)) {
     els.excludeInput.value = '';
-    showToast(`${domain} is already excluded`);
+    showToast(`${domain} already excluded`);
     return;
   }
 
@@ -332,7 +428,7 @@ async function handleResetTabTimer(tabId) {
   try {
     await sendMessage({ type: 'RESET_TAB_TIMER', tabId });
     await refreshState();
-    showToast('Tab timer reset');
+    showToast('Timer reset');
   } catch (err) {
     showToast(`Failed: ${err.message}`);
   }
@@ -353,9 +449,14 @@ for (const btn of els.tabButtons) {
   btn.addEventListener('click', () => setActiveTab(btn.dataset.tab));
 }
 
+els.themeToggleBtn.addEventListener('click', () => {
+  const nextTheme = isCurrentlyDark() ? 'light' : 'dark';
+  persistTheme(nextTheme);
+});
+
 els.enabledToggle.addEventListener('change', () => {
   const enabled = els.enabledToggle.checked;
-  updateSettings({ enabled }, enabled ? 'Auto-closing enabled' : 'Auto-closing paused');
+  updateSettings({ enabled }, enabled ? 'Enabled' : 'Paused');
 });
 
 els.timeoutInput.addEventListener('input', () => {
@@ -367,11 +468,12 @@ els.timeoutForm.addEventListener('submit', (event) => {
   event.preventDefault();
   const parsed = parseTimeoutMinutes(els.timeoutInput.value);
   if (parsed === null) {
-    els.timeoutError.textContent = `Enter a duration between ${MIN_TIMEOUT_MINUTES} and ${MAX_TIMEOUT_MINUTES} minutes.`;
+    els.timeoutError.textContent = `Enter a value between ${MIN_TIMEOUT_MINUTES} and ${MAX_TIMEOUT_MINUTES} minutes.`;
     els.timeoutError.hidden = false;
     return;
   }
   els.timeoutError.hidden = true;
+  els.timeoutInput.blur();
   updateSettings(
     { timeoutMinutes: parsed },
     `Timer set to ${formatDuration(parsed * 60 * 1000)}`
@@ -408,7 +510,9 @@ els.excludeForm.addEventListener('submit', (event) => {
   addExcludedDomain(els.excludeInput.value);
 });
 
-els.excludeCurrentBtn.addEventListener('click', () => {
+els.excludeCurrentBtn.addEventListener('click', (event) => {
+  event.preventDefault();
+  event.stopPropagation();
   const domain = els.excludeCurrentBtn.dataset.domain;
   if (domain) {
     addExcludedDomain(domain);
@@ -421,9 +525,9 @@ els.sweepNowBtn.addEventListener('click', async () => {
     await refreshState();
     if (res.closedCount > 0) {
       const label = res.closedCount === 1 ? 'tab' : 'tabs';
-      showToast(`Closed ${res.closedCount} inactive ${label}`);
+      showToast(`Closed ${res.closedCount} ${label}`);
     } else {
-      showToast('No inactive tabs due to close');
+      showToast('All quiet — nothing to close');
     }
   } catch (err) {
     showToast(`Failed: ${err.message}`);

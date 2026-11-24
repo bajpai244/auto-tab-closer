@@ -10,16 +10,33 @@
   <div class="app">
     <header class="header">
       <div class="brand">
-        <img src="../icons/icon32.png" alt="" class="brand-icon" width="28" height="28">
-        <div class="brand-text">
+        <span id="statusDot" class="status-dot" aria-hidden="true"></span>
+        <div class="brand-copy">
           <h1>Auto Tab Closer</h1>
           <p id="statusSubtitle" class="subtitle">Loading...</p>
         </div>
       </div>
-      <label class="switch" title="Enable or pause auto-closing">
-        <input type="checkbox" id="enabledToggle" aria-label="Enable Auto Tab Closer">
-        <span class="slider"></span>
-      </label>
+      <div class="header-controls">
+        <button
+          type="button"
+          id="themeToggleBtn"
+          class="icon-btn"
+          aria-label="Toggle light or dark theme"
+          title="Switch theme"
+        >
+          <svg class="icon-sun" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="4"/>
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+          </svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+        </button>
+        <label class="switch" title="Enable or pause auto-closing">
+          <input type="checkbox" id="enabledToggle" aria-label="Enable Auto Tab Closer">
+          <span class="slider"></span>
+        </label>
+      </div>
     </header>
 
     <nav class="tabs-nav" role="tablist">
@@ -27,26 +44,19 @@
         Timer
       </button>
       <button type="button" class="tab-btn" data-tab="open" role="tab" aria-selected="false">
-        Open Tabs <span id="openCountBadge" class="pill-count">0</span>
+        Tabs <span id="openCountBadge" class="tab-count">0</span>
       </button>
       <button type="button" class="tab-btn" data-tab="closed" role="tab" aria-selected="false">
-        Closed <span id="closedCountBadge" class="pill-count">0</span>
+        Closed <span id="closedCountBadge" class="tab-count">0</span>
       </button>
     </nav>
 
     <main class="content">
       <!-- Timer & Settings Panel -->
       <section id="panel-timer" class="panel active" role="tabpanel">
-        <div class="card">
-          <div class="card-header">
-            <label for="timeoutInput" class="card-title">Inactivity timer</label>
-            <span id="timeoutFormatted" class="accent-label">2h</span>
-          </div>
-          <p class="hint">
-            Tabs and Chrome web apps inactive longer than this duration are closed automatically.
-          </p>
-          <form id="timeoutForm" class="timer-input-row">
-            <div class="input-with-unit">
+        <div class="hero-timer">
+          <form id="timeoutForm" class="hero-form" novalidate>
+            <div class="hero-input-wrap">
               <input
                 type="number"
                 id="timeoutInput"
@@ -57,11 +67,14 @@
                 required
                 aria-label="Inactivity duration in minutes"
               >
-              <span class="unit">minutes</span>
+              <span class="hero-unit">min</span>
             </div>
-            <button type="submit" id="saveTimeoutBtn" class="btn btn-primary">Save</button>
+            <button type="submit" id="saveTimeoutBtn" class="btn-save" hidden>Save</button>
           </form>
+
+          <p id="timeoutFormatted" class="hero-caption">Closes inactive tabs after 2h</p>
           <div id="timeoutError" class="error-text" hidden></div>
+
           <div class="presets" aria-label="Quick presets">
             <button type="button" class="preset-chip" data-minutes="15">15m</button>
             <button type="button" class="preset-chip" data-minutes="30">30m</button>
@@ -72,76 +85,91 @@
           </div>
         </div>
 
-        <div class="card">
-          <div class="card-title">Protection rules</div>
-          <div class="toggle-list">
-            <label class="toggle-row">
-              <div class="toggle-copy">
-                <span class="toggle-label">Protect pinned tabs</span>
-              </div>
-              <input type="checkbox" id="protectPinnedToggle" class="checkbox">
+        <div class="divider"></div>
+
+        <div class="section">
+          <div class="section-heading">Keep open</div>
+          <div class="rule-list">
+            <label class="rule-row">
+              <span class="rule-label">Pinned tabs</span>
+              <span class="switch switch-sm">
+                <input type="checkbox" id="protectPinnedToggle">
+                <span class="slider"></span>
+              </span>
             </label>
-            <label class="toggle-row">
-              <div class="toggle-copy">
-                <span class="toggle-label">Protect tabs playing audio</span>
-              </div>
-              <input type="checkbox" id="protectAudibleToggle" class="checkbox">
+            <label class="rule-row">
+              <span class="rule-label">Tabs playing audio</span>
+              <span class="switch switch-sm">
+                <input type="checkbox" id="protectAudibleToggle">
+                <span class="slider"></span>
+              </span>
             </label>
-            <label class="toggle-row">
-              <div class="toggle-copy">
-                <span class="toggle-label">Keep active tab in unfocused windows</span>
-                <span class="toggle-sub">Leave off to also auto-close idle Chrome app/PWA windows</span>
+            <label class="rule-row">
+              <div class="rule-copy">
+                <span class="rule-label">Active tab in background windows</span>
+                <span class="rule-sub">Off closes idle app &amp; PWA windows</span>
               </div>
-              <input type="checkbox" id="protectBgActiveToggle" class="checkbox">
+              <span class="switch switch-sm">
+                <input type="checkbox" id="protectBgActiveToggle">
+                <span class="slider"></span>
+              </span>
             </label>
           </div>
         </div>
 
-        <div class="card">
-          <div class="card-header">
-            <span class="card-title">Excluded domains</span>
-            <button type="button" id="excludeCurrentBtn" class="btn-link" hidden>
-              + Current site
-            </button>
-          </div>
-          <form id="excludeForm" class="exclude-input-row">
-            <input
-              type="text"
-              id="excludeInput"
-              placeholder="e.g. mail.google.com"
-              autocomplete="off"
-              aria-label="Domain to exclude"
-            >
-            <button type="submit" class="btn btn-secondary">Add</button>
-          </form>
-          <div id="excludeError" class="error-text" hidden></div>
-          <ul id="excludedList" class="chip-list"></ul>
-          <p id="excludedEmpty" class="empty-inline">No excluded domains yet.</p>
-        </div>
+        <div class="divider"></div>
 
-        <div class="footer-bar">
-          <span id="totalClosedStat" class="stat-text">0 tabs auto-closed</span>
-          <button type="button" id="sweepNowBtn" class="btn btn-secondary btn-sm">
-            Check &amp; close now
-          </button>
-        </div>
+        <details id="excludeDetails" class="section exclusions">
+          <summary class="exclusions-summary">
+            <span class="exclusions-title">
+              Excluded sites <span id="excludedCount" class="muted-count">0</span>
+            </span>
+            <span class="exclusions-right">
+              <button type="button" id="excludeCurrentBtn" class="text-action" hidden>
+                + current
+              </button>
+              <span class="chevron" aria-hidden="true"></span>
+            </span>
+          </summary>
+
+          <div class="exclusions-body">
+            <form id="excludeForm" class="exclude-form">
+              <input
+                type="text"
+                id="excludeInput"
+                placeholder="Add domain, e.g. mail.google.com"
+                autocomplete="off"
+                aria-label="Domain to exclude"
+              >
+              <button type="submit" class="text-action strong">Add</button>
+            </form>
+            <div id="excludeError" class="error-text" hidden></div>
+            <ul id="excludedList" class="domain-list"></ul>
+            <p id="excludedEmpty" class="quiet-note">No excluded sites.</p>
+          </div>
+        </details>
+
+        <footer class="footer-bar">
+          <span id="totalClosedStat" class="stat-text">0 closed</span>
+          <button type="button" id="sweepNowBtn" class="text-action">Sweep now</button>
+        </footer>
       </section>
 
       <!-- Open Tabs Panel -->
       <section id="panel-open" class="panel" role="tabpanel" hidden>
         <div id="openTabsList" class="item-list"></div>
-        <div id="openTabsEmpty" class="empty-state" hidden>No open tabs found.</div>
+        <div id="openTabsEmpty" class="empty-state" hidden>No open tabs.</div>
       </section>
 
       <!-- Recently Closed Panel -->
       <section id="panel-closed" class="panel" role="tabpanel" hidden>
         <div class="panel-toolbar" id="closedToolbar" hidden>
-          <span class="toolbar-label">Recently auto-closed</span>
-          <button type="button" id="clearHistoryBtn" class="btn-link danger">Clear all</button>
+          <span class="toolbar-label">Recently closed</span>
+          <button type="button" id="clearHistoryBtn" class="text-action danger">Clear</button>
         </div>
         <div id="closedHistoryList" class="item-list"></div>
         <div id="closedHistoryEmpty" class="empty-state">
-          No tabs have been auto-closed yet.
+          Stillness. No tabs closed yet.
         </div>
       </section>
     </main>
